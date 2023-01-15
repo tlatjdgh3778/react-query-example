@@ -17,10 +17,17 @@ const Posts = () => {
   const [selectedPost, setSelectedPost] = useState(null)
 
   // replace with react query
-  const { data } = useQuery(["posts"], fetchPosts);
+  const { data, isError, error, isLoading } = useQuery(["posts"], fetchPosts);
 
-  if(!data) return <div></div>
-  
+  if(isLoading) return <h3>Loading ... </h3>
+
+  if(isError) return (
+    <>
+    <h3>Oops, something went wrong</h3>
+    <p>{error.toString()}</p>
+    </>
+  )
+
   return (
     <>
        <ul>
