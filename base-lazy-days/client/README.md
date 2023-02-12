@@ -1,11 +1,17 @@
-# Lazy Days Spa Client
+`prefetchQuery` => server에서부터 데이터를 받아오고 캐시에 저장된다.
+`setQueryData` => client에서부터 데이터를 받아오고 캐시에 저장된다.
 
-### A React client for the "Lazy Days Spa" app in the Udemy course "React Query: Server State Management for React"
+## prefetching
 
-## Installing
+현재 페이지를 보고 있는 동안 다음 페이지를 미리 받아와서 사용자가 다음 페이지
+버튼을 클릭할 때 기다릴 필요가 없어진다.
 
-Run `npm install`
+리페칭 동안에는 캐시된 데이터를 보여준다.
 
-## Starting the client
+## select
 
-Run `npm start`. The app will be found at [http://localhost:3000]. You will probably want to make sure the server is running as well.
+- 데이터와 함수가 모두 변경되었을 경우에만 실행된다.
+
+## refetching
+
+- 서버가 만료 데이터를 업데이트 한다.
