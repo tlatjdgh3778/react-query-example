@@ -1,7 +1,13 @@
-import { UseMutateFunction, useMutation } from '@tanstack/react-query';
+import {
+  UseMutateFunction,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/react-query';
 // eslint-disable-next-line import/no-unresolved
 import { useCustomToast } from 'components/app/hooks/useCustomToast';
 import jsonpatch from 'fast-json-patch';
+// eslint-disable-next-line import/no-unresolved
+import { queryKeys } from 'react-query/constants';
 
 import type { User } from '../../../../../shared/types';
 import { axiosInstance, getJWTHeader } from '../../../axiosInstance';
@@ -36,9 +42,32 @@ export function usePatchUser(): UseMutateFunction<
 > {
   const { user, updateUser } = useUser();
   const toast = useCustomToast();
+  const queryClient = useQueryClient();
   const { mutate: patchUser } = useMutation(
     (newUserData: User) => patchUserOnServer(newUserData, user),
     {
+      onMutate: async (newData: User | null) => {
+        // 쿼리 취소
+        // 낙관적 업데이트를 덮어쓰지 않게
+        queryClient.cancelQueries(queryKeys.user);
+        // 기존 사용자 데이터의 스냅샷을 찍음(가져옴)
+        const prevUserData: User = queryClient.getQueryData(queryKeys.user);
+        // 새로운 값으로 캐시를 업데이트(낙관적 업데이트)
+        updateUser(newData);
+        // 이후 해당 컨텍스트를 반환한다.
+        return { prevUserData };
+      },
+      // onError가 위에서 반환한 컨텍스트를 받음
+      onError: (error, newData, context) => {
+        // 롤백한다.
+        if (context.prevUserData) {
+          updateUser(context.prevUserData);
+          toast({
+            title: '업데이트에 실패해서 이전 데이터를 보여줍니다.',
+            status: 'warning',
+          });
+        }
+      },
       onSuccess: (userData: User | null) => {
         updateUser(userData);
         if (user) {
@@ -47,6 +76,11 @@ export function usePatchUser(): UseMutateFunction<
             status: 'success',
           });
         }
+      },
+      // 무조건 실행되는 부분
+      onSettled: () => {
+        // 쿼리 무효화 후 서버에서 최신 데이터를 받아오는 부분
+        queryClient.invalidateQueries(queryKeys.user);
       },
     },
   );
