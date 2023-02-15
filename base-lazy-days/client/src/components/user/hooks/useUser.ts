@@ -10,13 +10,17 @@ import {
   setStoredUser,
 } from '../../../user-storage';
 
-async function getUser(user: User | null): Promise<User | null> {
+async function getUser(
+  user: User | null,
+  signal: AbortSignal,
+): Promise<User | null> {
   console.log('getUser');
   if (!user) return null;
   const { data }: AxiosResponse<{ user: User }> = await axiosInstance.get(
     `/user/${user.id}`,
     {
       headers: getJWTHeader(user),
+      signal,
     },
   );
   return data.user;
@@ -30,15 +34,19 @@ interface UseUser {
 
 export function useUser(): UseUser {
   const queryClient = useQueryClient();
-  const { data: user } = useQuery(queryKeys.user, () => getUser(user), {
-    onSuccess: (data: User | null) => {
-      if (!data) {
-        clearStoredUser();
-      } else {
-        setStoredUser(data);
-      }
+  const { data: user } = useQuery(
+    queryKeys.user,
+    ({ signal }) => getUser(user, signal),
+    {
+      onSuccess: (data: User | null) => {
+        if (!data) {
+          clearStoredUser();
+        } else {
+          setStoredUser(data);
+        }
+      },
     },
-  });
+  );
 
   // meant to be called from useAuth
   function updateUser(newUser: User): void {
@@ -51,7 +59,7 @@ export function useUser(): UseUser {
   function clearUser() {
     clearStoredUser();
     queryClient.setQueryData(queryKeys.user, null);
-    queryClient.removeQueries(['user-appointments']);
+    queryClient.removeQueries([queryKeys.appointments, queryKeys.user]);
   }
 
   return { user, updateUser, clearUser };

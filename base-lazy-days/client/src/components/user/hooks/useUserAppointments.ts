@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 
 import type { Appointment, User } from '../../../../../shared/types';
@@ -20,10 +20,11 @@ async function getUserAppointments(
 export function useUserAppointments(): Appointment[] {
   const { user } = useUser();
 
+  const queryClient = useQueryClient();
   const fallback: Appointment[] = [];
 
   const { data: userAppointments = fallback } = useQuery(
-    ['user-appointments'],
+    [queryKeys.appointments, queryKeys.user, user?.id],
     () => getUserAppointments(user),
     {
       enabled: !!user,
